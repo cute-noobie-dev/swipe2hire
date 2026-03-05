@@ -30,7 +30,7 @@ export default function EmptyState({ type, onReset }) {
     'no-saved': {
       icon: <span className="text-5xl">🔖</span>,
       title: 'No saved jobs yet',
-      body: 'Swipe right on jobs you like and they'll appear here.',
+      body: '"Swipe right on jobs you like and they'll appear here."',
       action: (
         <Link to="/discover" className="btn-primary">
           Start Swiping
