@@ -18,7 +18,9 @@ import EmptyState from './EmptyState'
 import { useJobs } from '../store/JobContext'
 
 // How far (px) the user must drag to trigger a swipe action
-const SWIPE_THRESHOLD = 120
+const SWIPE_THRESHOLD = 100
+// Maximum drag distance before resistance kicks in
+const MAX_DRAG_DISTANCE = 300
 
 export default function SwipeDeck({ jobs }) {
   const { saveJob, isJobSaved } = useJobs()
@@ -28,12 +30,12 @@ export default function SwipeDeck({ jobs }) {
 
   // Framer Motion values for the top card
   const x      = useMotionValue(0)
-  const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18])
-  const opacity = useTransform(x, [-250, 0, 250], [0.6, 1, 0.6])
+  const rotate = useTransform(x, [-MAX_DRAG_DISTANCE, 0, MAX_DRAG_DISTANCE], [-15, 0, 15])
+  const opacity = useTransform(x, [-MAX_DRAG_DISTANCE, 0, MAX_DRAG_DISTANCE], [0.8, 1, 0.8])
 
-  // Overlay opacities
-  const likeOpacity = useTransform(x, [0, SWIPE_THRESHOLD], [0, 1])
-  const skipOpacity = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0])
+  // Overlay opacities with smoother transitions
+  const likeOpacity = useTransform(x, [0, SWIPE_THRESHOLD, MAX_DRAG_DISTANCE], [0, 0.8, 1])
+  const skipOpacity = useTransform(x, [-MAX_DRAG_DISTANCE, -SWIPE_THRESHOLD, 0], [1, 0.8, 0])
 
   const currentJob = jobs[currentIndex]
   const totalJobs  = jobs.length
@@ -42,7 +44,15 @@ export default function SwipeDeck({ jobs }) {
   // ── Swipe handlers ──────────────────────────────────────────────────────────
   const handleSwipeRight = useCallback(async () => {
     if (!currentJob) return
-    await animate(x, 600, { type: 'spring', stiffness: 300, damping: 30 })
+    
+    // Optimized animation with reduced duration and simpler easing
+    await animate(x, 400, {
+      type: 'tween',
+      ease: 'easeOut',
+      duration: 0.2
+    })
+    
+    // Batch state updates to prevent race conditions
     saveJob(currentJob)
     x.set(0)
     setCurrentIndex(i => i + 1)
@@ -50,7 +60,15 @@ export default function SwipeDeck({ jobs }) {
 
   const handleSwipeLeft = useCallback(async () => {
     if (!currentJob) return
-    await animate(x, -600, { type: 'spring', stiffness: 300, damping: 30 })
+    
+    // Optimized animation with reduced duration and simpler easing
+    await animate(x, -400, {
+      type: 'tween',
+      ease: 'easeOut',
+      duration: 0.2
+    })
+    
+    // Batch state updates
     x.set(0)
     setCurrentIndex(i => i + 1)
   }, [currentJob, x])
@@ -67,9 +85,24 @@ export default function SwipeDeck({ jobs }) {
 
   // ── Drag end handler ────────────────────────────────────────────────────────
   const handleDragEnd = (_, info) => {
-    if (info.offset.x > SWIPE_THRESHOLD)       handleSwipeRight()
-    else if (info.offset.x < -SWIPE_THRESHOLD) handleSwipeLeft()
-    else animate(x, 0, { type: 'spring', stiffness: 400, damping: 40 })
+    const { offset, velocity } = info
+    
+    // Consider both distance and velocity for more responsive swiping
+    const shouldSwipeRight = offset.x > SWIPE_THRESHOLD || (offset.x > 50 && velocity.x > 500)
+    const shouldSwipeLeft = offset.x < -SWIPE_THRESHOLD || (offset.x < -50 && velocity.x < -500)
+    
+    if (shouldSwipeRight) {
+      handleSwipeRight()
+    } else if (shouldSwipeLeft) {
+      handleSwipeLeft()
+    } else {
+      // Snap back to center with optimized animation
+      animate(x, 0, {
+        type: 'tween',
+        ease: 'easeOut',
+        duration: 0.15
+      })
+    }
   }
 
   // ── Empty states ────────────────────────────────────────────────────────────
@@ -120,10 +153,16 @@ export default function SwipeDeck({ jobs }) {
         <motion.div
           key={currentJob.id}
           className="absolute inset-0 swipe-card"
-          style={{ x, rotate, opacity, zIndex: 20 }}
+          style={{ x, rotate, opacity, zIndex: 20, touchAction: 'pan-y pinch-zoom' }}
           drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.8}
+          dragConstraints={{ left: -MAX_DRAG_DISTANCE, right: MAX_DRAG_DISTANCE }}
+          dragElastic={0.1}
+          dragMomentum={false}
+          dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
+          whileDrag={{
+            scale: 1.02,
+            transition: { duration: 0.1 }
+          }}
           onDragEnd={handleDragEnd}
         >
           {/* Like overlay */}

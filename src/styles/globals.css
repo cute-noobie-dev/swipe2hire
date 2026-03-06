@@ -68,7 +68,8 @@
 .swipe-card {
   cursor: grab;
   user-select: none;
-  touch-action: none;
+  touch-action: pan-y pinch-zoom;
+  will-change: transform;
 }
 
 .swipe-card:active {

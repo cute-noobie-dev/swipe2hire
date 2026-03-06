@@ -46,13 +46,11 @@ function AnimatedRoutes() {
     <>
       <RouteProgressBar routeKey={location.pathname} />
 
-      <AnimatePresence mode="wait" initial={false}>
-        <Routes location={location} key={location.pathname}>
-          <Route path="/"         element={<Home />} />
-          <Route path="/discover" element={<Discover />} />
-          <Route path="/saved"    element={<SavedJobs />} />
-        </Routes>
-      </AnimatePresence>
+      <Routes location={location}>
+        <Route path="/"         element={<Home />} />
+        <Route path="/discover" element={<Discover />} />
+        <Route path="/saved"    element={<SavedJobs />} />
+      </Routes>
     </>
   )
 }

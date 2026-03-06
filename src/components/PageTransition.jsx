@@ -13,16 +13,16 @@ import { motion } from 'framer-motion'
 export default function PageTransition({ children, delay = 0, className = '' }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.99 }}
-      animate={{ opacity: 1, y: 0,  scale: 1    }}
-      exit={{    opacity: 0, y: -8, scale: 0.99 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -5 }}
       transition={{
-        duration: 0.38,
-        ease: [0.22, 1, 0.36, 1],
+        duration: 0.2,
+        ease: 'easeOut',
         delay,
-        scale: { duration: 0.32 },
       }}
       className={className}
+      style={{ willChange: 'opacity, transform' }}
     >
       {children}
     </motion.div>
