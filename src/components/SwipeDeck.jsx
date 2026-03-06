@@ -85,6 +85,13 @@ function SwipeDeck({ jobs }) {
     jobs[currentIndex + 2]
   ].filter(Boolean)
 
+  // ── Motion value reset on card change ──────────────────────────────────────
+  useEffect(() => {
+    // Ensure motion value is reset when card changes
+    x.stop()
+    x.set(0)
+  }, [currentIndex, x])
+
   // ── Swipe handlers ──────────────────────────────────────────────────────────
   const handleSwipeRight = useCallback(async () => {
     if (!currentJob) return
@@ -98,6 +105,9 @@ function SwipeDeck({ jobs }) {
     
     // Batch state updates to prevent race conditions
     saveJob(currentJob)
+    
+    // Force reset motion value and update index
+    x.stop()
     x.set(0)
     setCurrentIndex(i => i + 1)
   }, [currentJob, saveJob, x])
@@ -112,7 +122,8 @@ function SwipeDeck({ jobs }) {
       duration: 0.2
     })
     
-    // Batch state updates
+    // Force reset motion value and update index
+    x.stop()
     x.set(0)
     setCurrentIndex(i => i + 1)
   }, [currentJob, x])
@@ -141,6 +152,7 @@ function SwipeDeck({ jobs }) {
       handleSwipeLeft()
     } else {
       // Snap back to center with optimized animation
+      x.stop()
       animate(x, 0, {
         type: 'tween',
         ease: 'easeOut',
@@ -194,14 +206,14 @@ function SwipeDeck({ jobs }) {
 
         {/* Active draggable card with enhanced animations */}
         <motion.div
-          key={`active-${currentJob.id}-${currentIndex}`}
+          key={currentIndex}
           className="absolute inset-0 swipe-card"
           style={{
             x,
             rotate,
             opacity,
             zIndex: 20,
-            touchAction: 'pan-y pinch-zoom',
+            touchAction: 'none',
             willChange: 'transform, opacity'
           }}
           drag="x"
@@ -212,12 +224,16 @@ function SwipeDeck({ jobs }) {
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
           whileDrag={{
             scale: 1.02,
             transition: { duration: 0.1 }
           }}
           onDragEnd={handleDragEnd}
+          onDragStart={() => {
+            // Ensure motion value is properly initialized for each card
+            x.set(0)
+          }}
         >
           {/* Like overlay */}
           <motion.div

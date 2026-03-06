@@ -68,12 +68,21 @@
 .swipe-card {
   cursor: grab;
   user-select: none;
-  touch-action: pan-y pinch-zoom;
+  touch-action: none;
   will-change: transform;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .swipe-card:active {
   cursor: grabbing;
+}
+
+/* ── Prevent mobile scroll interference ─────────── */
+.swipe-card * {
+  touch-action: none;
+  pointer-events: auto;
 }
 
 /* ── Custom scrollbar ─────────────────────────── */
