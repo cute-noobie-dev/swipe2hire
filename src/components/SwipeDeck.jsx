@@ -10,7 +10,7 @@
  *
  * Uses Framer Motion for smooth card transitions.
  */
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Heart, X, ChevronRight } from 'lucide-react'
 import JobCard from './JobCard'
@@ -22,7 +22,44 @@ const SWIPE_THRESHOLD = 100
 // Maximum drag distance before resistance kicks in
 const MAX_DRAG_DISTANCE = 300
 
-export default function SwipeDeck({ jobs }) {
+// ── Performance-optimized background card component ──────────────────────────
+const BackgroundCard = memo(({ job, offset, isJobSaved }) => {
+  if (!job) return null
+  
+  // Enhanced visual layering with better depth perception
+  const scale = 1 - offset * 0.05  // Slightly more pronounced scaling
+  const translateY = offset * 16    // Increased vertical offset for better depth
+  const opacity = 1 - offset * 0.3  // More pronounced opacity fade
+  const blur = offset * 1           // Subtle blur for depth of field effect
+  
+  return (
+    <motion.div
+      className="absolute inset-0 pointer-events-none"
+      style={{
+        transform: `scale(${scale}) translateY(${translateY}px)`,
+        opacity,
+        zIndex: 10 - offset,
+        willChange: 'transform, opacity',
+        filter: `blur(${blur}px)`,
+      }}
+      initial={{ scale: scale - 0.02, opacity: 0 }}
+      animate={{ scale, opacity }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+    >
+      <div className="h-full overflow-hidden rounded-2xl">
+        <JobCard
+          job={job}
+          variant="swipe"
+          isSaved={isJobSaved(job.id)}
+        />
+      </div>
+    </motion.div>
+  )
+})
+
+BackgroundCard.displayName = 'BackgroundCard'
+
+function SwipeDeck({ jobs }) {
   const { saveJob, isJobSaved } = useJobs()
 
   // Index of the current top card
@@ -37,9 +74,16 @@ export default function SwipeDeck({ jobs }) {
   const likeOpacity = useTransform(x, [0, SWIPE_THRESHOLD, MAX_DRAG_DISTANCE], [0, 0.8, 1])
   const skipOpacity = useTransform(x, [-MAX_DRAG_DISTANCE, -SWIPE_THRESHOLD, 0], [1, 0.8, 0])
 
+  // Performance optimization: precompute values
   const currentJob = jobs[currentIndex]
   const totalJobs  = jobs.length
   const remaining  = totalJobs - currentIndex
+  
+  // Preload next cards for smooth stacking (performance optimization)
+  const nextCards = [
+    jobs[currentIndex + 1],
+    jobs[currentIndex + 2]
+  ].filter(Boolean)
 
   // ── Swipe handlers ──────────────────────────────────────────────────────────
   const handleSwipeRight = useCallback(async () => {
@@ -132,33 +176,43 @@ export default function SwipeDeck({ jobs }) {
 
       {/* Card stack (show up to 3 stacked cards for depth effect) */}
       <div className="relative w-full" style={{ height: 520 }}>
-        {/* Background ghost cards */}
+        {/* Pre-populated background cards with full content */}
         {[2, 1].map((offset) => {
           const idx = currentIndex + offset
-          if (idx >= totalJobs) return null
+          const job = jobs[idx]
+          if (!job || idx >= totalJobs) return null
+          
           return (
-            <div
-              key={jobs[idx]?.id || `ghost-${idx}`}
-              className="absolute inset-0 card pointer-events-none"
-              style={{
-                transform: `scale(${1 - offset * 0.04}) translateY(${offset * 12}px)`,
-                opacity: 1 - offset * 0.25,
-                zIndex: 10 - offset,
-              }}
+            <BackgroundCard
+              key={`${job.id}-${idx}`}
+              job={job}
+              offset={offset}
+              isJobSaved={isJobSaved}
             />
           )
         })}
 
-        {/* Active draggable card */}
+        {/* Active draggable card with enhanced animations */}
         <motion.div
-          key={currentJob.id}
+          key={`active-${currentJob.id}-${currentIndex}`}
           className="absolute inset-0 swipe-card"
-          style={{ x, rotate, opacity, zIndex: 20, touchAction: 'pan-y pinch-zoom' }}
+          style={{
+            x,
+            rotate,
+            opacity,
+            zIndex: 20,
+            touchAction: 'pan-y pinch-zoom',
+            willChange: 'transform, opacity'
+          }}
           drag="x"
           dragConstraints={{ left: -MAX_DRAG_DISTANCE, right: MAX_DRAG_DISTANCE }}
           dragElastic={0.1}
           dragMomentum={false}
           dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
+          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
           whileDrag={{
             scale: 1.02,
             transition: { duration: 0.1 }
@@ -237,3 +291,6 @@ export default function SwipeDeck({ jobs }) {
     </div>
   )
 }
+
+// Export memoized component for performance optimization
+export default memo(SwipeDeck)
