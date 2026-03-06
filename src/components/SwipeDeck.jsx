@@ -105,7 +105,7 @@ export default function SwipeDeck({ jobs }) {
           if (idx >= totalJobs) return null
           return (
             <div
-              key={jobs[idx]?.id}
+              key={jobs[idx]?.id || `ghost-${idx}`}
               className="absolute inset-0 card pointer-events-none"
               style={{
                 transform: `scale(${1 - offset * 0.04}) translateY(${offset * 12}px)`,

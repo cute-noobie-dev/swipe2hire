@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import SwipeDeck from '../components/SwipeDeck'
 import FilterPanel, { ActiveFilterChips } from '../components/FilterPanel'
@@ -10,21 +10,28 @@ export default function Discover() {
   const { filters } = useJobs()
   const [jobs, setJobs]       = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState(null)
 
   // Stable string key derived from active filters —
   // passed as `key` to SwipeDeck so it fully remounts (resets
   // currentIndex) whenever the filtered job set changes.
   const deckKey = JSON.stringify(filters)
 
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true)
-    const data = await getJobs(filters)
-    setJobs(data)
-    setLoading(false)
-  }
+    setError(null)
+    try {
+      const data = await getJobs(filters)
+      setJobs(data)
+    } catch (err) {
+      setError(err.message || 'Failed to fetch jobs')
+    } finally {
+      setLoading(false)
+    }
+  }, [filters])
 
   // Refetch whenever filters change
-  useEffect(() => { fetchJobs() }, [filters])  // eslint-disable-line
+  useEffect(() => { fetchJobs() }, [fetchJobs])
 
   return (
     <PageTransition>
@@ -40,7 +47,7 @@ export default function Discover() {
           <div>
             <h1 className="font-display font-bold text-3xl text-white">Discover</h1>
             <p className="text-brand-muted text-sm mt-1">
-              {loading ? 'Loading jobs…' : `${jobs.length} jobs match your filters`}
+              {loading ? 'Loading jobs…' : error ? 'Error loading jobs' : `${jobs.length} jobs match your filters`}
             </p>
           </div>
 
@@ -58,6 +65,11 @@ export default function Discover() {
         {loading ? (
           <div className="flex items-center justify-center py-32">
             <div className="w-10 h-10 rounded-full border-2 border-brand-blue border-t-transparent animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-32 text-center">
+            <p className="text-red-400 mb-4">{error}</p>
+            <button onClick={fetchJobs} className="btn-primary px-6 py-2">Try Again</button>
           </div>
         ) : (
           <SwipeDeck key={deckKey} jobs={jobs} />
