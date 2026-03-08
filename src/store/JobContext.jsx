@@ -11,6 +11,9 @@ const defaultFilters = {
   locationType: [],
   type: [],
   tags: [],
+  keyword: '',
+  location: '',
+  datePosted: '',
 }
 
 function loadFromStorage(key, fallback) {

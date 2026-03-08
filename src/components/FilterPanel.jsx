@@ -16,6 +16,7 @@ import { useJobs } from '../store/JobContext'
 const LOCATION_TYPES = ['Remote', 'Hybrid', 'Onsite']
 const JOB_TYPES      = ['Full-time', 'Part-time', 'Internship']
 const POPULAR_TAGS   = ['React', 'Node.js', 'Python', 'TypeScript', 'AWS', 'Java', 'MongoDB', 'Figma']
+const DATE_POSTED   = ['Any time', 'Past 24 hours', 'Past 3 days', 'Past week', 'Past month']
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function FilterPanel({ onApply }) {
@@ -44,7 +45,7 @@ export default function FilterPanel({ onApply }) {
   }
 
   const handleReset = () => {
-    const empty = { locationType: [], type: [], tags: [] }
+    const empty = { locationType: [], type: [], tags: [], keyword: '', location: '', datePosted: '' }
     setDraft(empty)
     resetFilters()
     onApply?.()
@@ -52,10 +53,10 @@ export default function FilterPanel({ onApply }) {
   }
 
   const activeCount =
-    filters.locationType.length + filters.type.length + filters.tags.length
+    filters.locationType.length + filters.type.length + filters.tags.length + (filters.keyword ? 1 : 0) + (filters.location ? 1 : 0) + (filters.datePosted ? 1 : 0)
 
   const draftCount =
-    draft.locationType.length + draft.type.length + draft.tags.length
+    draft.locationType.length + draft.type.length + draft.tags.length + (draft.keyword ? 1 : 0) + (draft.location ? 1 : 0) + (draft.datePosted ? 1 : 0)
 
   return (
     <>
@@ -117,6 +118,28 @@ export default function FilterPanel({ onApply }) {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
+              {/* Text Inputs */}
+              <div className="space-y-4">
+                <TextInput
+                  label="Keyword"
+                  placeholder="Search title, company, skills..."
+                  value={draft.keyword}
+                  onChange={(v) => setDraft(prev => ({ ...prev, keyword: v }))}
+                />
+                <TextInput
+                  label="Location"
+                  placeholder="City, country, or region..."
+                  value={draft.location}
+                  onChange={(v) => setDraft(prev => ({ ...prev, location: v }))}
+                />
+              </div>
+              <FilterGroup
+                label="Date Posted"
+                options={DATE_POSTED}
+                selected={draft.datePosted ? [draft.datePosted] : []}
+                onToggle={v => setDraft(prev => ({ ...prev, datePosted: prev.datePosted === v ? '' : v }))}
+                single
+              />
               <FilterGroup
                 label="Work Type"
                 options={LOCATION_TYPES}
@@ -166,16 +189,26 @@ export function ActiveFilterChips({ onApply }) {
     ...filters.locationType.map(v => ({ key: 'locationType', value: v })),
     ...filters.type.map(v         => ({ key: 'type',         value: v })),
     ...filters.tags.map(v         => ({ key: 'tags',         value: v })),
+    ...(filters.keyword    ? [{ key: 'keyword',    value: filters.keyword }]    : []),
+    ...(filters.location   ? [{ key: 'location',   value: filters.location }]   : []),
+    ...(filters.datePosted ? [{ key: 'datePosted', value: filters.datePosted }] : []),
   ]
 
   if (all.length === 0) return null
 
   const remove = (key, value) => {
-    const updated = {
-      ...filters,
-      [key]: filters[key].filter(v => v !== value),
+    if (key === 'keyword' || key === 'location' || key === 'datePosted') {
+      // For string fields, clear them entirely
+      const updated = { ...filters, [key]: '' }
+      setFilters(updated)
+    } else {
+      // For array fields, filter out the value
+      const updated = {
+        ...filters,
+        [key]: filters[key].filter(v => v !== value),
+      }
+      setFilters(updated)
     }
-    setFilters(updated)
     onApply?.()
   }
 
@@ -211,7 +244,7 @@ export function ActiveFilterChips({ onApply }) {
 }
 
 // ─── Reusable filter option group ─────────────────────────────────────────────
-function FilterGroup({ label, options, selected, onToggle }) {
+function FilterGroup({ label, options, selected, onToggle, single = false }) {
   return (
     <div className="space-y-3">
       <p className="text-xs font-semibold text-brand-muted uppercase tracking-wider">{label}</p>
@@ -234,6 +267,25 @@ function FilterGroup({ label, options, selected, onToggle }) {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// ─── Text Input for keyword/location ───────────────────────────────────────────
+function TextInput({ label, placeholder, value, onChange }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-semibold text-brand-muted uppercase tracking-wider">{label}</p>
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 rounded-lg bg-brand-card border border-brand-border
+                   text-white placeholder-brand-muted text-sm
+                   focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue
+                   transition-colors duration-150"
+      />
     </div>
   )
 }
