@@ -26,7 +26,7 @@ export async function getJobs(filters = {}) {
 
   let results = [...jobsData]
 
-  const { locationType, type, tags, keyword, location, datePosted } = filters
+  const { locationType, type, keyword, location, datePosted } = filters
 
   if (locationType && locationType.length > 0) {
     results = results.filter(j => locationType.includes(j.locationType))
@@ -34,12 +34,6 @@ export async function getJobs(filters = {}) {
 
   if (type && type.length > 0) {
     results = results.filter(j => type.includes(j.type))
-  }
-
-  if (tags && tags.length > 0) {
-    results = results.filter(j =>
-      tags.some(tag => j.tags.includes(tag))
-    )
   }
 
   // Keyword filter: search in title, company, summary, and tags

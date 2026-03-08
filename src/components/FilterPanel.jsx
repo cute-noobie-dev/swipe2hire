@@ -15,7 +15,6 @@ import { useJobs } from '../store/JobContext'
 
 const LOCATION_TYPES = ['Remote', 'Hybrid', 'Onsite']
 const JOB_TYPES      = ['Full-time', 'Part-time', 'Internship']
-const POPULAR_TAGS   = ['React', 'Node.js', 'Python', 'TypeScript', 'AWS', 'Java', 'MongoDB', 'Figma']
 const DATE_POSTED   = ['Any time', 'Past 24 hours', 'Past 3 days', 'Past week', 'Past month']
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -45,7 +44,7 @@ export default function FilterPanel({ onApply }) {
   }
 
   const handleReset = () => {
-    const empty = { locationType: [], type: [], tags: [], keyword: '', location: '', datePosted: '' }
+    const empty = { locationType: [], type: [], keyword: '', location: '', datePosted: '' }
     setDraft(empty)
     resetFilters()
     onApply?.()
@@ -53,10 +52,10 @@ export default function FilterPanel({ onApply }) {
   }
 
   const activeCount =
-    filters.locationType.length + filters.type.length + filters.tags.length + (filters.keyword ? 1 : 0) + (filters.location ? 1 : 0) + (filters.datePosted ? 1 : 0)
+    filters.locationType.length + filters.type.length + (filters.keyword ? 1 : 0) + (filters.location ? 1 : 0) + (filters.datePosted ? 1 : 0)
 
   const draftCount =
-    draft.locationType.length + draft.type.length + draft.tags.length + (draft.keyword ? 1 : 0) + (draft.location ? 1 : 0) + (draft.datePosted ? 1 : 0)
+    draft.locationType.length + draft.type.length + (draft.keyword ? 1 : 0) + (draft.location ? 1 : 0) + (draft.datePosted ? 1 : 0)
 
   return (
     <>
@@ -152,12 +151,6 @@ export default function FilterPanel({ onApply }) {
                 selected={draft.type}
                 onToggle={v => toggleItem('type', v)}
               />
-              <FilterGroup
-                label="Skills / Tags"
-                options={POPULAR_TAGS}
-                selected={draft.tags}
-                onToggle={v => toggleItem('tags', v)}
-              />
             </div>
 
             {/* Footer */}
@@ -188,7 +181,6 @@ export function ActiveFilterChips({ onApply }) {
   const all = [
     ...filters.locationType.map(v => ({ key: 'locationType', value: v })),
     ...filters.type.map(v         => ({ key: 'type',         value: v })),
-    ...filters.tags.map(v         => ({ key: 'tags',         value: v })),
     ...(filters.keyword    ? [{ key: 'keyword',    value: filters.keyword }]    : []),
     ...(filters.location   ? [{ key: 'location',   value: filters.location }]   : []),
     ...(filters.datePosted ? [{ key: 'datePosted', value: filters.datePosted }] : []),

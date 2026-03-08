@@ -10,7 +10,6 @@ const STORAGE_KEY_FILTERS = 'swipe2hire_filters'
 const defaultFilters = {
   locationType: [],
   type: [],
-  tags: [],
   keyword: '',
   location: '',
   datePosted: '',
